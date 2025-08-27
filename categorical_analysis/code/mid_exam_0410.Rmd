@@ -1,0 +1,199 @@
+---
+title: "Midterm Examine"
+author: "711378912 蔡宜諠"
+date: "2025-04-10"
+output: html_document
+---
+<br> 
+
+# Q1: 台灣⼈⼝組成問題。
+
+研究表明，台灣⼈⼝組成比例為：閩南⼈（71%）、客家⼈（12%）、外省⼈（12%）、原住⺠族（2.6%）及新住⺠（2.4%）。若某團體內部調查結果如下：
+
+|  學歷  | 閩南⼈  | 客家⼈ | 外省⼈ | 原住⺠族 | 新住⺠ |
+|--------|-----:|-----:|------:|------:|------:|
+| ⼤學及以下  | 40   | 25    | 2   | 3   | 1   |
+| ⼤學以上   | 84   | 20    | 10   | 3   | 3   |
+
+```{r}
+# 建立交叉表
+edu_pop <- matrix(c(40,25,2,3,1,
+                    84,20,10,3,3), 
+                  nrow = 2, byrow = TRUE)
+colnames(edu_pop) <- c("閩南人", "客家人", "外省人", "原住民族", "新住民")
+rownames(edu_pop) <- c("大學及以下", "大學以上")
+edu_pop <- as.table(edu_pop)
+edu_pop
+```
+
+<br>
+
+### 統計檢定
+  + $H_0$: 閩南人比例為 71%
+  + $H_a$: 閩南人比例不為 71%
+
+```{r}
+n <- sum(edu_pop)                  # (40+25+2+3+1) + (84+20+10+3+3) 全部人口數
+x <- sum(edu_pop[, "閩南人"])      # 40 + 84 閩南語人口數
+cat(n, x)
+pihat <- x / n
+pi0 <- 0.71
+alpha <- 0.05
+wald_stat <- (pihat - pi0) / sqrt(pihat * (1 - pihat) / n)
+score_stat <- (pihat - pi0) / sqrt(pi0 * (1 - pi0) / n)
+cat("Wald test statistic =", wald_stat)
+cat("Score test statistic =", score_stat)
+```
+
+雙尾檢定的臨界值：$z_{0.975} = \pm 1.96$
+
++ Wald 檢定統計量為 -1.760357，未落在拒絕域（即 |t| < 1.96），因此**無法拒絕**虛無假設 $H_0$。
++ Score 檢定統計量為 -1.851345，也未達到拒絕標準，因此同樣**無法拒絕** $H_0$。
++ 統計上**沒有足夠證據證明**認為該團體中閩南人比例與台灣整體比例（71%）有顯著差異。
+
+<br>
+
+### 請利⽤Odds Ratio的概念來檢視是否外省⼈比閩南⼈更重視學歷。
+
+比較「外省人」與「閩南人」在學歷上的傾向是否有顯著差異。  
+定義「重視學歷」為：是否擁有 **大學以上學歷**。
+
+- $H_0: \theta = 1$（外省人與閩南人對於學歷的勝算比相同）
+- $H_a: \theta \ne 1$（兩族群對於學歷的勝算比不同）
+
+```{r}
+# 取出所需資料
+# 若有 0 要補 0.5，但這題不用
+B2 <- edu_pop[c("大學以上", "大學及以下"), c("閩南人", "外省人")]
+
+theta_hat <- B2[1,1] * B2[2,2] / (B2[1,2] * B2[2,1])
+log_theta_hat <- log(theta_hat)
+var_log_theta_hat <- sum(1 / B2)
+ub <- log_theta_hat + qnorm(.975) * sqrt(var_log_theta_hat)
+lb <- log_theta_hat + qnorm(.025) * sqrt(var_log_theta_hat)
+elb <- exp(lb); eub <- exp(ub)
+
+cat("Odds Ratio =", theta_hat, "\n")
+```
+根據 Odds Ratio 的計算，外省人相對於閩南人取得大學以上學歷的勝算比為 0.42，  
+表示外省人取得高學歷的傾向**低於**閩南人。由於勝算比小於 1，**沒有證據證明外省人比閩南人更重視學歷**。
+
+<br>
+
+### 請檢定是否學歷與⼈⼝組成獨立。
+
+- $H_0$: 學歷與人口組成**獨立**
+- $H_a$: 學歷與人口組成**不獨立**
+
+```{r}
+chisq_result <- chisq.test(edu_pop)
+chisq_result
+```
+
+卡方檢定統計量為 10.631，p 值為 0.031。  
+由於 p 值小於 0.05，拒絕虛無假設，表示學歷與人口組成之間**具有統計上的顯著關聯性(不獨立)**。
+
+<br><br>
+
+<hr>
+
+# Q2: 靈長類的腦容量是否相對比較⼤？
+
+為回答此問題，R library(MASS) 裡的 Animals 資料集收集了28種哺乳動物之腦重量及⾝體重。
+以下程式可調動此資料集。bb 是腦⾝比，Primatology 是是否為靈長類的指標（1:靈長類、0:非靈長類）。
+請⽤ logistic regression 分析此資料，並回達「靈長類的腦容量是否相對比較⼤」之問題。
+
+```{r}
+library(MASS)
+data("Animals")
+bb <- Animals$brain/Animals$body ## 腦⾝比
+Primatology <- c(0,0,0,0,0,0,0,1,0,1,0,0,1,1,0,0,1,0,0,0,0,0,0,1,0,0,0,0) ## 靈長類指標
+plot(bb, Primatology)
+
+# 邏輯斯回歸模型
+model <- glm(Primatology ~ bb, family = binomial)
+summary(model)
+
+```
+分析結果顯示，腦身比對是否為靈長類的影響接近顯著，但 p 值為 0.0537，略高於 0.05。  
+因此，**在統計上沒有足夠證據證明靈長類的腦容量相對較大**。  
+不過從圖形與係數方向來看，腦身比較高的動物仍較有可能是靈長類，未來可透過更多樣本進一步驗證。
+
+
+\[
+\text{logit}(\pi) = -2.200 + 0.1177 \cdot \text{腦身比}，  
+其中 (\pi) 為預測為靈長類的機率
+\]
+
+
+
+<br><br>
+
+<hr>
+
+# Q3: 異位性⽪膚炎之預測
+
+請以 lights.csv 之資料建構⼀logistic regression ⽤以預測得異位性⽪膚炎之機率，需要執⾏變數選
+擇。
+
+- **反應變數：**
+  - `Atopy`: 是否患有異位性皮膚炎（1 = 有，0 = 無）
+
+- **主要自變數：**
+  - `Sex`: 性別（1 = 男，0 = 女）
+  - `Prematurity`: 是否早產（1 = 是，0 = 否）
+  - `Smoking`: 懷孕期間母親是否抽菸（1 = 是，0 = 否）
+  - `Total_IgE`: 超敏指數
+  - `Vita_C`: 維他命C攝取量
+
+- **過敏源自變數（皮膚測試結果，1 = 過敏反應，0 = 無）：**
+  - `Milk`, `Dander`, `Mite`, `Grass`, `Fish`, `Crustacean`, `Egg`, `Vege`
+
+```{r}
+allergy <- read.csv("D:/NTPU_class/categorical_analysis/code/lights.csv", header=TRUE) # 請⽤您⾃⼰的路徑
+str(allergy)
+
+# 建立 full model
+full_model <- glm(Atopy ~ Sex + Prematurity + Smoking + Total_IgE + Vita_C +
+                    Milk + Dander + Mite + Grass + Fish + Crustacean + Egg + Vege,
+                  data = allergy, family = binomial)
+
+# 執行 Stepwise AIC 進行變數選擇
+# 不想看到一大堆ㄋ warning 訊息
+final_model <- suppressWarnings(step(full_model))
+
+# 查看最終模型結果
+summary(final_model)
+```
+<br>
+
+### 挑選變數
+
+雖然模型過程中出現警告訊息 glm.fit: fitted probabilities numerically 0 or 1 occurred，但不影響模型估計與變數解釋，先不管他。
+
+本研究透過邏輯斯迴歸模型預測異位性皮膚炎（Atopy），並以 Stepwise AIC 方法選出最佳變數組合。
+最終模型中選入以下顯著變數：
+
+- **Total_IgE**（超敏指數）：係數為 0.0117，p < 0.001  
+- **Milk**（牛奶過敏）：係數為 0.7854，p = 0.0136  
+- **Mite**（蟎蟲過敏）：係數為 3.6524，p < 0.001  
+- **Grass**（草類過敏）：係數為 3.2641，p = 0.0019  
+- **Vege**（蔬菜過敏）：係數為 0.9234，p = 0.0043
+
+<br>
+
+### 模型總結
+
+根據 stepwise AIC 篩選，最終邏輯斯迴歸模型如下：
+
+\[
+\text{logit}(\pi) = -3.672 + 0.0117 \cdot \text{Total_IgE} + 0.7854 \cdot \text{Milk} + 3.6524 \cdot \text{Mite} + 3.2641 \cdot \text{Grass} - 0.0244 \cdot \text{Crustacean} + 0.9234 \cdot \text{Vege}，
+其中 (\pi) 表示預測患有異位性皮膚炎的機率
+\]
+
+此模型可用於根據個體的超敏指數與過敏原反應，來預測其罹病機率。  
+模型中顯示，Total_IgE 越高，以及對牛奶、蟎蟲、草類與蔬菜過敏者，罹病風險皆顯著上升。
+
+雖然 Crustacean（甲殼類）變數未達顯著水準（p = 0.9787），但仍被保留於最終模型中，代表其在 stepwise 選模過程中未被剔除。
+
+

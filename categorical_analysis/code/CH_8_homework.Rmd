@@ -1,0 +1,102 @@
+---
+title: "Chapter 8: Homework"
+author: "711378912 蔡宜諠"
+date: "2025/05/15"
+output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+## 作業：找五位同學玩猜拳比賽。
+
+1. 每次比賽採一戰一勝制，猜到第一次有人勝出者為勝，另一位則為敗。
+2. 兩兩對戰最少五次，可以多戰幾次。
+3. 分析此五人中，是否有人特別厲害。
+
+
+```{r}
+# 建立勝場數矩陣（由 Python 模擬生成）
+mat <- matrix(c(
+  NA, 4, 3, 3, 3,
+  4, NA, 5, 5, 2,
+  5, 1, NA, 3, 3,
+  2, 0, 2, NA, 2,
+  2, 6, 3, 3, NA
+), nrow = 5, byrow = TRUE)
+
+players <- c("A", "B", "C", "D", "E")
+colnames(mat) <- players
+rownames(mat) <- players
+print(mat)
+```
+
+<br>
+
+轉換格式編碼
+
+<br>
+
+```{r}
+bt_encoded <- data.frame()
+for (i in 1:4) {
+  for (j in (i + 1):5) {
+    row <- rep(0, length(players))
+    row[i] <- 1
+    row[j] <- -1
+    temp <- data.frame(
+      t(as.data.frame(row))
+    )
+    colnames(temp) <- players
+    temp$nij <- mat[i, j]
+    temp$nji <- mat[j, i]
+    bt_encoded <- rbind(bt_encoded, temp)
+  }
+}
+
+print(bt_encoded)
+```
+
+<br>
+
+第一個 row 表示 A = 1，B = -1：表示這場比賽是 A 對上 B，A 是 row 的主角（Player 1）
+nij = 4：A 贏了 4 次; nji = 4：B 也贏了 4 次
+
+<br>
+
+```{r}
+bt_encoded$p <- bt_encoded$nij / (bt_encoded$nij + bt_encoded$nji)
+
+# 建模：勝率 ~ 選手 dummy，使用 logit link
+fit <- glm(p ~ -1 + A + B + C + D + E, 
+           family = binomial, 
+           weights = nij + nji, 
+           data = bt_encoded)
+
+summary(fit)
+```
+
+<br>
+
+在這裡E同學是參考組
+
+<br>
+
+| 選手 | 估計值 (Estimate) | p 值  | 解釋 |
+|------|-------------------|----------------|-------|
+| A | -0.29158 | 0.5813 | 實力與 E 差異不顯著 |
+| B | +0.03379 | 0.9463 | 與 E 實力幾乎相當 |
+| C | -0.36496 | 0.4879 | 實力略低於 E，但差異不顯著 |
+| D | -1.00910 | 0.0876 | 實力顯著低於 E（接近顯著） |
+| E | 參考組 | — | 最強參考基準 |
+
+<br>
+
+### ✅結論
+
+- E 同學整體實力最佳，因此模型將其設為 baseline。
+
+- D 同學的實力明顯偏弱（p ≈ 0.0876，接近統計顯著）。
+
+- 其餘同學（A、B、C）與 E 之間的勝負沒有顯著差異，實力相對接近。
+
+<br><br>

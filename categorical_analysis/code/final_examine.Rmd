@@ -1,0 +1,174 @@
+---
+title: "Final Examine"
+author: "711378912 蔡宜諠"
+date: "2025-06-05"
+output: html_document
+---
+
+## Q1: (30%) Car Insurance Data Analysis 
+```{r}
+library(MASS)
+data("Insurance")
+str(Insurance)
+```
+- District (factor): district of residence of policyholder (1 to 4): 4 is major cities.
+- Group (an ordered factor): group of car with levels <1 litre, 1–1.5 litre, 1.5–2 litre, >2 litre.
+- Age (an ordered factor): the age of the insured in 4 groups labelled <25, 25–29, 30–35, >35.
+- Holders: numbers of policyholders.
+- Claims: numbers of claims
+
+請建構一合理模型，用以預測不同地區(District)、不同年齡層(Age)及不同種車輛(Group)對申請理賠數(Claims)的影響。
+其中保單持有人數(Holders)會對申請理賠數有重要的影響，因為保單持有人數愈多才有可能有愈多的申請理賠數。請建構二個以上的模型，
+並用AIC進行模型選擇。
+
+```{r}
+head(Insurance)
+# 1. 確認變數型態與無遺失值
+str(Insurance); sum(is.na(Insurance))  # District/Group/Age 都是因子、Holders/Claims 為整數，且無 NA
+
+# 2. 檢查 Poisson 過度離散
+dispersion_ratio <- {
+  tmp <- glm(Claims ~ District + Age + Group, offset = log(Holders),
+             family = poisson, data = Insurance)
+  sum(residuals(tmp, type="pearson")^2) / tmp$df.residual
+}
+dispersion_ratio  # 若 >1.5，直接改用 glm.nb()
+```
+dispersion_ratio < 1.5 表示並無明顯過度離散，故可直接使用 Poisson 回歸模型。
+
+```{r}
+# 開始建立模型ㄌ
+# 3-1. Poisson 回歸（無交互作用）
+fit_pois <- glm(Claims ~ District + Age + Group,
+                offset = log(Holders),
+                family = poisson(link="log"),
+                data = Insurance)
+summary(fit_pois)
+
+# 3-2. Negative Binomial 回歸（無交互作用）
+fit_nb <- glm.nb(Claims ~ District + Age + Group + offset(log(Holders)),
+                 data = Insurance)
+summary(fit_nb)
+
+# 3-3. Poisson 加交互作用
+fit_pois_int <- glm(Claims ~ District * Group + Age * Group,
+                    offset = log(Holders),
+                    family = poisson(link="log"),
+                    data = Insurance)
+summary(fit_pois_int)
+
+# 3-4. Negative Binomial 加交互作用
+fit_nb_int <- glm.nb(Claims ~ District * Group + Age * Group + offset(log(Holders)),
+                     data = Insurance)
+summary(fit_nb_int)
+```
+
+拿出剛剛的所有結果比較一下下
+
+```{r}
+models <- list(
+  Poisson_無交互 = fit_pois,
+  NB_無交互      = fit_nb,
+  Poisson_含交互 = fit_pois_int,
+  NB_含交互      = fit_nb_int
+)
+aic_tbl <- data.frame(
+  Model = names(models),
+  AIC   = sapply(models, AIC)
+)
+aic_tbl[order(aic_tbl$AIC), ]
+```
+
+Poisson 回歸（無交互作用） AIC 最低是最佳模型。
+
+---
+
+## Q2: (30%) 乒乓球世界排名資料分析
+
+根據國際桌球總會世界排名，王楚欽、林昀儒、林高遠及林詩棟選手的對戰結果如下表。其中Row是勝利、Column是失敗，格子中是對戰結果的次數。
+```{r, echo=FALSE}
+library(knitr)
+A <- matrix(c(NA, 3, 3, 1, 9, NA, 6, 8, 5, 2, NA, 0, 3, 0, 1, NA), 4,4)
+colnames(A) <- c("WangC", "LinY", "LinG", "LinS")
+rownames(A) <- c("WangC", "LinY", "LinG", "LinS")
+kable(A)
+```
+
+請用 Bradley-Terry model 分析資料，並給出這些選手能力的排序。
+```{r}
+X <- matrix(0, 6,6)
+X[1,] <- c(1, -1, 0, 0, 9, 3)
+X[2,] <- c(1, 0, -1, 0, 5, 3)
+X[3,] <- c(1, 0, 0, -1, 3, 1)
+X[4,] <- c(0, 1, -1, 0, 2, 6)
+X[5,] <- c(0, 1, 0, -1, 0, 8)
+X[6,] <- c(0, 0, 1, -1, 1, 0)
+colnames(X) <- c("WangC", "LinY", "LinG", "LinS", "nij", "nji")
+rownames(X) <- NULL
+```
+
+```{r}
+# 整理一下表格們
+players <- c("WangC", "LinY", "LinG", "LinS")
+
+contests <- data.frame(
+  player1 = factor(c("WangC", "WangC", "WangC", "LinY", "LinY", "LinG"),
+                   levels = players),
+  player2 = factor(c("LinY",  "LinG",  "LinS",  "LinG",  "LinS",  "LinS"),
+                   levels = players),
+  wins1   = X[, "nij"],
+  wins2   = X[, "nji"],
+  stringsAsFactors = FALSE
+)
+contests
+```
+
+```{r}
+library(BradleyTerry2)
+bt_model <- BTm(
+  outcome = cbind(wins1, wins2),
+  player1 = player1,
+  player2 = player2,
+  data    = contests
+)
+
+summary(bt_model)
+abilities <- BTabilities(bt_model)
+sort(abilities[, "ability"], decreasing = TRUE)
+```
+
+WangC 能力值最高，其次依序為 LinS、LinG，最後是 LinY。
+
+---
+## Q3:(40%)懨食症資料
+
+```{r}
+data("anorexia")
+str(anorexia)
+```
+
+- Treat (factor of three levels): "Cont" (control), "CBT" (Cognitive Behavioural treatment) and "FT" (family treatment).
+- Prewt: weight of patient before study period, in lbs.
+- Postwt: weight of patient after study period, in lbs.
+
+假設成年人體重長期少於82lb會對身體造成無法挽回之傷害
+```{r}
+anorexia$Prewt_B <- ifelse(anorexia$Prewt < 82, 1, 0)
+anorexia$Postwt_B <- ifelse(anorexia$Postwt < 82, 1, 0)
+```
+請用GLMM建構模型分析資料，目標是看看這些治療何者對於避免患者體重少82lb更有用。
+
+
+```{r}
+# 先從建立模型開始!
+fit <- glm(Postwt_B ~ Treat + Prewt_B,
+           family = binomial,
+           data   = anorexia)
+# 計算 Wald 近似的 95% CI（不做 profile）
+ci_wald <- exp(confint.default(fit))
+cbind(OR = exp(coef(fit)), CI_low = ci_wald[,1], CI_high = ci_wald[,2])
+```
+
+1. Cont vs CBT：OR ≈ 5.21（95% CI = [1.54, 17.63]），顯示 Cont 組患者比 CBT 組更容易在治療後仍低於 82 lb。
+2. FT vs CBT：OR ≈ 0.96（95% CI = [0.22, 4.14]），未達顯著差異。
+3. Prewt_B（治療前 < 82 lb）：OR ≈ 4.07（95% CI = [1.37, 12.12]），表示治療前體重偏低者比體重正常者更容易治療後仍低於 82 lb。
