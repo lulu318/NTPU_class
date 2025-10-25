@@ -1,0 +1,199 @@
+---
+title: '資料探勘 '
+author: "711378912 蔡宜諠"
+date: "27/09/2025"
+output:
+  html_document: default
+  word_document: default
+  pdf_document: default
+---
+
+<br>
+
+
+
+```{r}
+# 創造一個x
+x <- sample(1:39, 10, replace = FALSE)
+x
+
+x2 = 1 + (x >= 10) + (x >= 20) + (x >= 30)
+x2
+```
+
+```{r}
+# 將上述變數的數字編碼改為文字編碼：
+labels = c("A", "B", "C")
+x3 = labels[x2]
+x3
+# 將年齡資料轉換為年齡群組 1~20、21~40、41~60、61以上，並編碼為 1、2、3、4：
+age = c(36, 53, 13, 3, 6, 36, 48, 6, 22, 1, 7, 18, 9, 41, 68)
+
+age2 = 1 + (age >= 21) + (age >= 41) + (age >= 61)
+age2
+```
+
+```{r}
+x = c('貓', '狗', '狼')
+animals = c('家庭寵物', '野生動物')
+x.index = 1 * (x %in% c('貓', '狗')) + 2 * (x == '狼')
+x = animals[x.index]
+x
+```
+
+
+```{r}
+income = c(130065, 82961, 133076, 123028, 108945, 173466, 17477)
+newcodes = c("低收入", "中等收入", "高收入")
+index = 1 * (income < 20000) +
+        2 * (income >= 20000 & income < 60000) +
+        3 * (income >= 60000)
+income = newcodes[index]
+income
+```
+
+```{r}
+income = 1 + 1 * (income >= 20000) + 1 * (income >= 60000)
+income
+```
+
+```{r}
+x = c(4, 12, 50, 18, 50, 22, 23, 46, 8, 46, 36, 18, 10, 14, 35, 48, 23, 17, 29, 30)
+x2 = ifelse(x <= 30, 1, 2)
+x2
+x3 = ifelse(x <= 30, "A", "B")
+x3
+```
+
+```{r}
+y = c("B", "A", "C", "C", "B", "A", "D", "B", "D", "C")
+y2 = ifelse(y %in% c("A", "C"), "Group1", "Group2")
+y2
+
+```
+
+```{r}
+x = c(4, 12, 50, 18, 50, 22, 23, 46, 8, 46, 36, 18, 10, 14, 35, 48, 23, 17, 29, 30)
+x2 = ifelse(x <= 10, 1, ifelse(x <= 20, 2, 3))
+x2
+```
+
+```{r}
+y = c("D", "A", "B", "D", "A", "E", "B", "E", "D", "A", "D", "D", "D", "B", "A", "C", "E", "C", "D", "E")
+
+y2 = ifelse(y %in% c("A", "E"), 1,
+            ifelse(y == "C", 2, 3))
+y2
+```
+
+```{r}
+x = c(4, 12, 50, 18, 50, 22, 23, 46, 8, 46, 36, 18, 10, 14, 35, 48, 23, 17, 29, 30)
+
+x2 = cut(x,
+         breaks = c(0, 10, 20, max(x)),
+         labels = c(1, 2, 3))
+
+x2
+as.vector(x2)
+```
+
+
+```{r}
+x3 = cut(x, breaks = c(0, 10, 20, max(x)))
+x3
+```
+
+```{r}
+x5 = cut(x,
+         breaks = c(0, 10, 20, max(x)),
+         labels = c("A", "B", "C"))
+x5
+```
+
+```{r}
+score = round(rnorm(10, 60, 10))
+score
+score.cut = cut(score, breaks = 5)
+score.cut
+```
+
+```{r}
+# 載入套件
+library(car)
+
+# 範例資料
+x = c(1, 3, 1, 2, 3, 1, 1, 3)
+
+# 將 1、2 編碼為 "A"，3 編碼為 "B"
+recode(x, "c(1,2) = 'A'; else = 'B'")
+recode(x, "1:2 = 'A'; 3 = 'B'")
+```
+
+```{r}
+# 成績資料
+score = c(61, 85, 79, 62, 29, 100, 71, 25, 40, 54)
+
+# 將不及格 (<60) 改為 0，及格 (>=60) 改為 1
+recode(score, "lo:59 = 0; 60:100 = 1")
+
+# 使用 else 的寫法
+recode(score, "lo:59 = 0; else = 1")
+```
+
+```{r}
+recode(score, "lo:59 = '不及格'; 60:100 = '及格'")
+recode(score, "lo:40 = 1; 41:60 = 2; 61:80 = 3; 81:hi = 4; else = NA")
+recode(score, "0:40 = 'A'; 40:60 = 'B'; 60:80 = 'C'; 80:100 = 'D'; else = NA")
+```
+
+第二部分~
+
+```{r}
+matrix(c(1, 2, 3, 4, 5, 6), nrow = 2, ncol = 3)
+c1 = c(1, 2, 3, 4)
+c2 = c(5, 6, 7, 8)
+X = data.frame(c1, c2)
+X
+as.matrix(X)
+```
+```{r}
+# w 是文字向量
+w = c("100", "0200", "0030.52")
+
+# 轉換為整數
+as.integer(w)
+# 轉換為數值（可保留小數）
+as.numeric(w)
+```
+```{r}
+c1 = c(1, 2, 3)
+c2 = c(11, 12, 13)
+c3 = c(31, 32, 33)
+
+c123 = c(c1, c2, c3)
+c123
+
+union(c1, c2)
+```
+
+```{r}
+c1 = c(1, 2, 3)
+c2 = c(11, 12, 13)
+c3 = c(31, 32, 33)
+
+c123.rows = rbind(c1, c2, c3)
+c123.rows
+
+c123.columns = cbind(c1, c2, c3)
+c123.columns
+
+c(c123.rows, c123.columns)
+
+```
+
+
+```{r}
+rbind(c123.rows, c123.columns)
+c4 = cbind(c123.rows, c123.columns)
+c4
+```
