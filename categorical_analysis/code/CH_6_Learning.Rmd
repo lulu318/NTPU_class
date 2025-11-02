@@ -1,0 +1,175 @@
+---
+title: "Chapter 6: Study Sheet & Homework"
+author: "Sheng-Mao"
+date: "2025/04/17"
+output: html_document
+---
+
+## Review of Multicategory Logit Models
+
+- Suppose the response variable consists of $c$ categories.
+- Nominal Response
+  + Choose a baseline category
+    \[
+      \log \frac{\Pr(Y=j)}{\Pr(Y=c)} = \alpha_j + \beta_j x
+    \]
+  + Different baselines should lead to same conclusion
+
+- Ordinal Response
+  + Cumulative Logit Model $\Pr(Y\leq j) = \Pr(Y=1) + \cdots + \Pr(Y = j)$
+    \[
+      \log \frac{\Pr(Y\leq j)}{1-\Pr(Y \leq j)} 
+      = \log \frac{\Pr(Y\leq j)}{\Pr(Y > j)} = \alpha_j + \beta_j x
+    \]
+  + Paired-Category Logit Model
+    + Adjacent-Categories Logits
+      \[
+        \log \frac{\Pr(Y=j)}{\Pr(Y=j+1)} = \alpha_j + \beta_j x
+      \]
+    + Sequential Logits
+      \[
+        \log \frac{\Pr(Y=j)}{\Pr(Y=j+1)+\cdots+\Pr(Y=c)} = \alpha_j + \beta_j x
+      \]
+- Parameters in different models have different meaning. They are not compariable.
+- However, no matter which models are implied, we can find the same $\Pr(Y=j)=\pi_j$, $j=1,\dots,c$, given $x$.
+- For ordinal response, we can set $\beta_j=\beta$, $j=1,\dots, c-1$. For example,
+  \[
+    \log \frac{\Pr(Y\leq j)}{1-\Pr(Y \leq j)} 
+      = \alpha_j + \beta x
+  \]
+  + Intercept $\alpha_j$ is the log-odds of falling into or below category when $x=0$.
+  + Same slopes $\beta$ means same odds ratios $e^{\beta}$.
+
+
+## 範例：Clinical Trial / 實驗 / 核心問題
+
+The table below results from a clinical trial for the treatment of small-cell lung cancer. Patients were randomly assigned to two treatment groups. The sequential therapy administrated the same combination of chemotheraputic agents in each treatment cycle. The alternating therapy used three different combintations, alternating from cycle to cycle. Fit a cumulative logit model with a proportional odds structure. Interpret the estimated treatment effect. Check whether a model allowing interaction provides a significantly better fit.
+
+|Treatment|Gender|No Change|Partial Remission|Complete Remission|
+|---------|------|--------:|-------:|--------:|
+|Sequential|Male|45|29|26|
+| |Female|12|5|2|
+|Alternating|Male|44|20|20|
+| |Female|7|3|1|
+
+### 資料
+```{r}
+treat <- c("S", "S", "A", "A")
+gender <- c("M", "F", "M", "F")
+NC <- c(45,12,44,7)
+PR <- c(29,5,20,3)
+CR <- c(28,2,20,1)
+DATA <- data.frame(treat, gender, NC, PR, CR)
+DATA
+```
+
+### 分析
+
+- Associations between variables
+  - Treatment vs Outcome
+  - Gender vs Outcome
+  
+```{r}
+B <- rbind(DATA[1,3:5]+DATA[2,3:5], DATA[3,3:5]+DATA[4,3:5])
+head(B)
+rownames(B) <- c("Sequential", "Alternating")
+head(B)
+colnames(B) <- c("No Change", "Partial Rem.", "Complete Rem.")
+head(B)
+mosaicplot(B, main="")
+chisq.test(B)
+
+B <- rbind(DATA[1,3:5]+DATA[3,3:5], DATA[2,3:5]+DATA[4,3:5])
+rownames(B) <- c("Male", "Female")
+colnames(B) <- c("No Change", "Partial Rem.", "Complete Rem.")
+mosaicplot(B, main="")
+head(B)
+chisq.test(B)
+```
+
+
+- Modeling: Keywords
+  - Cumulative Logit Model
+  - Proportional odds structure
+  - treatment effect
+  - interaction effect
+  
+```{r, message=FALSE}
+library(VGAM)
+fit_full_par <- vglm(cbind(NC, PR, CR)~treat*gender, family=cumulative(parallel=TRUE), data=DATA)
+summary(fit_full_par)
+data.frame(treat, gender, fitted(fit_full_par))
+
+fit_red_par <- vglm(cbind(NC, PR, CR)~treat+gender, family=cumulative(parallel=TRUE), data=DATA)
+summary(fit_red_par)
+data.frame(treat, gender, fitted(fit_red_par))
+
+LRT <- deviance(fit_red_par) - deviance(fit_full_par)
+pvalue <- 1 - pchisq(LRT, df=1)
+cat("Test for no interaction effec: LRT=", LRT, ", pvalue=", pvalue, "\n")
+```
+
+- How to choose a model? Using AIC
+\[
+  AIC = -2\times \mbox{Log-Likelihod} + 2 \times \mbox{number of parameters}
+\]
+  - AIC for the full model is `r -2*(-14.978)+2*5`
+  - AIC for the reduced model is `r -2*(-15.0257)+2*4`
+  - Choose the model with smaller AIC. The reduced model is chosen.
+
+### 總結： 
+
+
+  
+## 作業：Seat-Belt Problem
+
+### 實驗
+
+Following is a sample of automobile accidents. The response categories are (1) not injured, (2) injured but not transported by emergency medical services, (3) injured and transported by emergency medical services but not hospitalized, (4) injured and hospitalized but did not die, (5) injured and died. Analyzed the data. Prepare a short report, summarizing your finding. Let SOI be the shorthand of severity of injury. 
+
+|Gender|Location|Seat-Belt|SOI1|SOI2|SOI3|SOI4|SOI5|
+|:----:|:------:|:-------:|---:|---:|---:|---:|---:|
+|Female|Urban|No|7287|175|720|91|10|
+| | |Yes|11587|126|577|48|8|
+| |Rural|No|3246|73|710|159|31|
+| | |Yes|6134|94|564|82|17|
+|Male|Urban|No|10381|136|566|96|14|
+| | |Yes|10969|83|259|37|1|
+| |Rural|No|6123|141|710|188|45|
+| | |Yes|6693|74|353|74|12|
+### 核心問題
+
+1. 我們關心的主要問題是Seat-Belt到底有沒有起到降低車禍傷害程度的作用？
+2. 除了有無使用安全帶，是否還有其它影響結果的變量？Gender & Location
+
+Note: 探索性實驗，Seat-Belt 必須留在最後的模型裡，而 Gender 及 Location 則不一定
+
+### 資料
+```{r}
+gender <- rep(c("Female", "male"), each=4)
+Location <- rep(rep(c("Urban", "Rural"), 2), each=2)
+SB <- rep(c("No", "Yes"), 4)
+SOI1 <- c(7287,11587,3246,6134,10381,10969,6123,6693)
+SOI2 <- c(175,126,73,94,136,83,141,74)
+SOI3 <- c(720,577,710,564,566,259,710,353)
+SOI4 <- c(91,48,159,82,96,37,188,74)
+SOI5 <- c(10,8,31,17,14,1,45,12)
+DATA <- data.frame(gender, Location, SB, SOI1, SOI2, SOI3, SOI4, SOI5)
+DATA
+```
+
+
+### 資料分析
+
+1. 繪圖呈現資料
+  - Gender vs SOI
+  - Location vs SOI
+  - Seat-Belt vs SOI
+  
+2. 模型建立與統計分析
+  - Discuss that which model should be applied (use parallel model?)
+  - Determine whether gender and location should be involved in the model
+  - Any interaction?
+
+3. 結論
+  - Report your final model and explain the meaning of parameters.

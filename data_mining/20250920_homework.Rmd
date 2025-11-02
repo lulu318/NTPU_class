@@ -1,0 +1,32 @@
+---
+title: '資料探勘作業'
+author: "711378912 蔡宜諠"
+date: "20/09/2025"
+output:
+  html_document: default
+  word_document: default
+  pdf_document: default
+---
+
+<br>
+
+### "標準化成績"的R練習
+
+創造一筆資料 
+```{r}
+Math <- c(502, 600, 412, 358, 495, 512, 410, 625, 573, 522)
+Science <- c(95, 99, 80, 82, 75, 85, 80, 95, 89, 86)
+English <- c(25, 22, 18, 15, 20, 28, 15, 30, 27, 18)
+Student <- c("A", "B", "C", "D", "E", "F", "G", "H", "I", "J")
+roster <- data.frame(Student, Math, Science, English, stringsAsFactors = FALSE)
+
+roster
+```
+
+計算標準差
+```{r}
+z <- scale(roster[, 2:4])
+score <- apply(z, 1, mean)
+roster <- cbind(roster, score)
+roster
+```

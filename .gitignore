@@ -1,0 +1,9 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ml:
+ml/code/PyMLData/
+case_studies/file/TC_TS_teaching_sources_2022/
+case_studies/file/TC_TS_teaching_sources_2022.zip

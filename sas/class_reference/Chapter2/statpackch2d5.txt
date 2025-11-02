@@ -1,0 +1,6 @@
+Cole Pond   2JUN95 31 .25 32 .3  32 .25 33 .3
+Cole Pond   3JUL95 33 .32 34 .41 37 .48 32 .28
+Cole Pond   4AUG95 29 .23 30 .25 34 .47 32 .3
+Eagle Lake  2JUN95 32 .35 32 .25 33 .30
+Eagle Lake  3JUL95 30 .20 36 .45
+Eagle Lake  4AUG95 33 .30 33 .28 34 .42
