@@ -18,10 +18,10 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 # === 資料庫設定 ===
-DB_FILE = r"D:/NTPU_class/paper/code/mobile01_clawler/ntpu_paper.sqlite"
+DB_FILE = "/Users/lulutsai/Documents/NTPU_class/paper/code/mobile01_clawler/ntpu_paper.sqlite"
 
 # === 控制今日爬取筆數 ===
-LIMIT_COUNT = 100  # ← 想爬幾筆就改這裡
+LIMIT_COUNT = 50  # ← 想爬幾筆就改這裡
 
 # === 建立資料表（若不存在） ===
 def init_db():
@@ -97,8 +97,12 @@ def crawl_and_store():
             except:
                 post_time = "[無時間]"
 
-            # 抓主文內容
-            content = driver.find_element(By.CSS_SELECTOR, "div[itemprop='articleBody']").text.strip()
+            # 若是第2頁以後，只抓留言不抓主文
+            try:
+                content = driver.find_element(By.CSS_SELECTOR, "div[itemprop='articleBody']").text.strip()
+            except:
+                print(f"找不到主文內容 link_id={link_id}")
+                content = "[無主文]"
 
             # 抓留言
             all_articles = driver.find_elements(By.CSS_SELECTOR, "article.c-articleLimit")

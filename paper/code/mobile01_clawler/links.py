@@ -11,7 +11,7 @@ from bson import ObjectId
 from datetime import datetime
 
 # === 資料庫設定 ===
-DB_FILE = r"D:/NTPU_class/paper/code/mobile01_clawler/ntpu_paper.sqlite"
+DB_FILE = "/Users/lulutsai/Documents/NTPU_class/paper/code/mobile01_clawler/ntpu_paper.sqlite"
 
 def get_conn():
     conn = sqlite3.connect(DB_FILE)
